@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      background-color: #2d3436;
+    }
+
+    .idle-timer-bar {
+      height: 4px;
+      background-color: #00b894;
+      width: 0%;
+      animation: timer linear forwards;
+    }
+
+    @keyframes timer {
+      from {
+        width: 0%;
+      }
+      to {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<button onclick="main()">START</button>
+<div id="idle-timer-bar"></div>
+
+<script>
+const wssUrl = 'wss://live.bitjita.com/';
+const playerId = '648518346354609956';
+const notify = new Audio('notify.mp3');
+const idleThreshold = 1000 * 8;
+const notifyInterval = 1000 * 5;
+const idleTimerBar = document.getElementById('idle-timer-bar');
+
+let initialized = false;
+let isInIdle = false;
+let idleTimer = null;
+let lastStamina = 0;
+let waitingForStaminaRecovered = false;
+
+idleTimerBar.style.animationDuration = `${idleThreshold / 1000}s`;
+
+const active = () => {
+  clearInterval(idleTimer);
+  startIdleTimer();
+  isInIdle = false;
+  idleTimerBar.classList.remove('idle-timer-bar');
+  setTimeout(() => {
+    idleTimerBar.classList.add('idle-timer-bar');
+  }, 10);
+};
+
+const startIdleTimer = () => {
+  idleTimer = setInterval(() => {
+    isInIdle = true;
+  }, idleThreshold);
+};
+
+const startNotifyTimer = () => {
+  setInterval(() => {
+    if (!isInIdle) return;
+    if (waitingForStaminaRecovered) return;
+    notify.play();
+  }, notifyInterval);
+};
+
+const main = () => {
+  if (initialized) return;
+  initialized = true;
+  startIdleTimer();
+  startNotifyTimer();
+  idleTimerBar.classList.add('idle-timer-bar');
+
+  const connection = new WebSocket(wssUrl);
+  connection.onopen = () => {
+    const message = {
+      type: 'subscribe',
+      channels: [
+        `stamina_state:${playerId}`,
+        `mobile_entity_state:${playerId}`,
+        `experience_state:${playerId}`,
+      ],
+    };
+    connection.send(JSON.stringify(message));
+  }
+
+  connection.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.type === 'subscribed') {
+      console.log('subscribed');
+      return;
+    }
+    const channel = message.channel.split(':')[0];
+    if (channel === 'mobile_entity_state') {
+      active();
+    }
+    if (channel === 'experience_state') {
+      active();
+    }
+    if (channel === 'stamina_state') {
+      const currentStamina = message.data.stamina;
+      const isStaminaDecreased = lastStamina - currentStamina > 0;
+      const isStaminaRecovering = lastStamina - currentStamina < 0;
+      const staminaChangeAmount = Math.abs(lastStamina - currentStamina);
+      if (isStaminaDecreased) {
+        active();
+        waitingForStaminaRecovered = false;
+      } else if (isStaminaRecovering) {
+        console.log(staminaChangeAmount > 2);
+        waitingForStaminaRecovered = staminaChangeAmount > 2;
+      } else {
+        waitingForStaminaRecovered = false;
+      }
+      lastStamina = currentStamina;
+    }
+  }
+};
+</script>
+</body>
+</html>

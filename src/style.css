@@ -1,0 +1,37 @@
+:root {
+  --main-bg-color: #16171d;
+  --light-bg-color: #23252E;
+  --button-color: #6B6B6B;
+  --button-disabled-color: #292929;
+  --button-border-color: #3e3e3e;
+
+  color-scheme: dark;
+  background: var(--main-bg-color);
+}
+
+input {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  padding: 10px 16px;
+  display: flex;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  &[disabled] {
+    background: var(--button-disabled-color);
+  }
+  img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+p {
+  margin: 0;
+}
