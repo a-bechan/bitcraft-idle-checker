@@ -1,8 +1,16 @@
+// 現在未使用
+// bitcraft-idle-checker 本体の改修後にスタミナ最大値を取得する為に使用予定
 async function run(playerId) {
   const url = `https://bitjita.com/api/players/${playerId}/stats`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-identifier': 'bitcraft-idle-checker',
+      },
+    });
 
     if (!response.ok) {
       const error = new Error();

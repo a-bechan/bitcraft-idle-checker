@@ -2,7 +2,13 @@ async function run(playerName) {
   const url = `https://bitjita.com/api/players?q=${playerName}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-identifier': 'bitcraft-idle-checker',
+      },
+    });
 
     if (!response.ok) {
       const error = new Error();
